@@ -1,0 +1,120 @@
+---
+title: "Week 05 Assignment"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This assignment is due by 6 pm on the evening of the 6th class. It should be submitted via Github.
+
+#### Textbook
+
+-   [Chapter 19 - Functions](https://r4ds.had.co.nz/functions.html)
+
+
+#### Exercises
+
+```{r}
+if(! require("pacman")) install.packages("pacman")
+
+pacman::p_load(
+  tidyverse,
+  here,
+  tidycensus
+)
+```
+
+1. Read COVID deaths data from the provided URL into an object called `covid`.
+
+```{r}
+
+url <- "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_US.csv"
+```
+
+2. There are several columns that we will not need to work with or that should be renamed to improve the clarity of the fields.
+
+Remove:
+
+-   `UID`
+-   `iso2`
+-   `iso3`
+-   `code3`
+-   `Country_Region`
+-   `Lat`
+-   `Long_`
+-   `Combined_Key`
+
+Rename:
+
+-   `Admin2` to `County`
+
+Write this to an object called `covid`.
+
+```{r}
+
+```
+
+3. Utilize the `tidycensus` package to read American Community Survey data at the county level for 2019 for the variable `B22007_002`. Call this new object `food_stamps`. It will be helpful downstream to rename the `estimate` and `moe` variables as `food_stamps_estimate` and `food_stamps_moe`. We also will not need the `variable` field.
+
+```{r}
+
+```
+
+4. Re-shape the `covid` dataframe from wide to long such that there is a `date` column and a `deaths` column. Write this to a new dataframe called `covid_long`.
+
+```{r}
+
+```
+
+5. The `FIPS` value in the `covid_long` dataset and the `GEOID` value in the `food_stamps` dataset represent the same unique ID for each county in the US. Currently, we cannot join the two fields together, though. What is the reason why this is not possible?
+
+Adjust the `FIPS` field in the `covid_long` dataset with the following code to fix the issue. Describe what this code is doing and why this will fix the initial issue.
+
+```{r}
+covid_long <- 
+  covid_long %>% 
+  mutate(FIPS = str_pad(FIPS, 5, pad = "0"))
+```
+
+
+
+6. Join the `food_stamps` dataframe to the `covid_long` dataframe. Identify the field in each dataframe that will be used as the primary key. Call this new dataframe `covid_joined`. After completing the join, you may notice the `County` and `Province_State` fields in relation to the `NAME` field as a confirmation that you successfully completed your join.
+
+```{r}
+
+```
+7. Our new data frame will require some light cleaning as well:
+
+-   Remove the `NAME` field
+-   It may be helpful to reorder your columns so that like information is together
+-   Some COVID deaths are not assigned to a county. Filter out any counties that are "Unassigned"
+-   The `date` field needs to be converted to type Date. Use the following code to enable this:
+    -   `date = as.Date(date, format = "%m/%d/%y")`
+    -   We'll discuss dates much more in the next class.
+-   Assign this back to the `covid_joined` object.
+
+```{r}
+
+```
+
+8. How have the number of deaths changed over time for Delaware counties? Build a graph to support your answer. Interpret the graph.
+
+```{r}
+
+```
+
+9. Consider counties in Delaware, Maryland, Pennsylvania, New York, and New Jersey.
+
+What is the per capita death rate for each county? Which county has the highest per capita death rate?
+
+```{r}
+
+```
+
+10. Create a graph that demonstrates the relationship between food stamps per capita and deaths per capita for Delaware, Maryland, Pennsylvania, New York, and New Jersey. Interpret the graph.
+
+```{r}
+
+```
