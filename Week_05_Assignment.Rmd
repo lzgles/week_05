@@ -7,13 +7,6 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-This assignment is due by 6 pm on the evening of the 6th class. It should be submitted via Github.
-
-#### Textbook
-
--   [Chapter 19 - Functions](https://r4ds.had.co.nz/functions.html)
-
-
 #### Exercises
 
 ```{r}
