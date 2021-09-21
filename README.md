@@ -1,5 +1,7 @@
 # Week 5 - Joining & Reshaping Datasets
 
+## Description and Topics
+
 Oftentimes, the data that we work with is not contained in a single table, but multiple. In cases like this, we must "join" data together. Further, data is frequently in the wrong "shape" for analysis - sometimes it must be "wide" and sometimes it must be "long". The tidyverse provides tools to more easily shape data to support analysis. Topics covered will include:
 
 -   Understanding types of joins - right, left, inner, etc. 
