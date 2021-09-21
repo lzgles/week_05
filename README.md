@@ -13,8 +13,8 @@ Oftentimes, the data that we work with is not contained in a single table, but m
 | Points:           | 5                             |
 | Display grade as: | Points                        |
 | Submission type:  | Via Github                    |
-| Due date:         | November 1, 2021, during class |
-| Available from:   | October 25, 12:00 am          |
+| Due date:         | November 1, 2021, 5:59 pm     |
+| Available from:   | October 25, 2021 12:00 am     |
 | Until:            |                               |
 
 Complete all questions in the `Week_05_Assignment.Rmd` file.
