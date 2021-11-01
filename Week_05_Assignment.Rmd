@@ -24,6 +24,8 @@ pacman::p_load(
 ```{r}
 
 url <- "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_US.csv"
+
+covid <- read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_US.csv")
 ```
 
 2. There are several columns that we will not need to work with or that should be renamed to improve the clarity of the fields.
@@ -47,23 +49,46 @@ Write this to an object called `covid`.
 
 ```{r}
 
+covid <- 
+covid %>%
+  select(-UID, -iso2, -iso3, -code3, -Country_Region, -Lat, -Long_, -Combined_Key) %>%
+  rename("County" = Admin2)
+
+
 ```
 
 3. Utilize the `tidycensus` package to read American Community Survey data at the county level for 2019 for the variable `B22007_002`. Call this new object `food_stamps`. It will be helpful downstream to rename the `estimate` and `moe` variables as `food_stamps_estimate` and `food_stamps_moe`. We also will not need the `variable` field.
 
 ```{r}
+library(tidycensus)
+
+food_stamps <- 
+  get_acs(geography = "county",
+          variable = "B22007_002",
+          survey = "acs1",
+          year = 2019) %>%
+  select(-variable) %>%
+  rename("food_stamps_estimate" = estimate, "food_stamps_moe" = moe)
 
 ```
 
 4. Re-shape the `covid` dataframe from wide to long such that there is a `date` column and a `deaths` column. Write this to a new dataframe called `covid_long`.
 
 ```{r}
+covid_long <-
+  covid %>%
+  pivot_longer(cols = c(5:647),
+               names_to = "date",
+               values_to = "deaths")
+
 
 ```
 
 5. The `FIPS` value in the `covid_long` dataset and the `GEOID` value in the `food_stamps` dataset represent the same unique ID for each county in the US. Currently, we cannot join the two fields together, though. What is the reason why this is not possible?
 
 Adjust the `FIPS` field in the `covid_long` dataset with the following code to fix the issue. Describe what this code is doing and why this will fix the initial issue.
+
+We cannot currently join them because State values below 10 are represented by a single digit in the Covid dataset (e.g., Arizona = 4) and two digits in the Food Stamps dataset (e.g, Arizona = 04). The code below forces the FIPS to be five digits, and for FIPS that are only four digits, it adds a 0. 
 
 ```{r}
 covid_long <- 
@@ -76,6 +101,12 @@ covid_long <-
 6. Join the `food_stamps` dataframe to the `covid_long` dataframe. Identify the field in each dataframe that will be used as the primary key. Call this new dataframe `covid_joined`. After completing the join, you may notice the `County` and `Province_State` fields in relation to the `NAME` field as a confirmation that you successfully completed your join.
 
 ```{r}
+covid_joined <- 
+left_join(
+  x = covid_long,
+  y = food_stamps,
+  by = c("FIPS" = "GEOID"))
+
 
 ```
 7. Our new data frame will require some light cleaning as well:
@@ -89,25 +120,74 @@ covid_long <-
 -   Assign this back to the `covid_joined` object.
 
 ```{r}
+covid_joined <- 
+covid_joined %>%
+  select(-NAME) %>%
+  filter(County != "Unassigned") %>%
+  relocate(date, .before=Population) %>%
+  mutate(date = as.Date(date, format = "%m/%d/%y"))
 
 ```
 
 8. How have the number of deaths changed over time for Delaware counties? Build a graph to support your answer. Interpret the graph.
 
+Deaths increased rapidly at the beginning of the pandemic, then leveled off over the summer. Numbers began climbing again into the fall and winter, then leveled off somewhat over the spring and summer of 2021. Deaths are currently increasing in all counties. New Castle County experienced more covid deaths than Kent and Sussex, but also has the highest population.    
+
 ```{r}
+covid_joined %>%
+  filter(Province_State == "Delaware", County != "Out of DE") %>%
+  ggplot(aes(x = date,
+             y = deaths,
+             color = County)) +
+  geom_line() +
+  theme_minimal() +
+  scale_x_date(date_breaks = "1 month") +
+  theme(axis.text.x = element_text(angle = 90)) +
+  labs(title = "Delaware Covid Deaths by County")
+
+
 
 ```
 
 9. Consider counties in Delaware, Maryland, Pennsylvania, New York, and New Jersey.
 
 What is the per capita death rate for each county? Which county has the highest per capita death rate?
+Bronx County, New York has the highest per capita death rate
 
 ```{r}
+covid_joined %>%
+  filter(Province_State %in% c("Delaware", "Maryland", "Pennsylvania", "New York", "New Jersey"), Population != 0) %>%
+  mutate(per_cap_death = deaths / Population) %>%
+  group_by(County, Province_State) %>%
+  summarize(max = max(per_cap_death)) %>%
+  ungroup() %>%
+  arrange(desc(max))
 
 ```
 
 10. Create a graph that demonstrates the relationship between food stamps per capita and deaths per capita for Delaware, Maryland, Pennsylvania, New York, and New Jersey. Interpret the graph.
 
+The relationship between food stamps per capita and deaths per capita is slightly positive for all 5 states, so counties with higher food stamp usage experienced higher covid deaths but the relationship is not strong. Maryland shows the strongest positive trend and Delaware shows the weakest. 
+
+For my code, there is only one food stamp value per county, so I chose to summarize using the median, but max or min would have been the same value. I'm sure there's probably a better way to do that. 
+
+
 ```{r}
+covid_joined %>%
+  filter(Province_State %in% c("Delaware", "Maryland", "Pennsylvania", "New York", "New Jersey"), Population != 0) %>%
+  mutate(per_cap_death = deaths / Population, per_cap_food = food_stamps_estimate / Population) %>%
+  group_by(County, Province_State) %>%
+  summarize(max_deaths = max(per_cap_death), food_stamp_value = median(per_cap_food)) %>%  
+  ungroup() %>%
+  ggplot(aes(x = max_deaths,
+             y = food_stamp_value)) +
+  geom_point() +
+  geom_smooth(method = 'lm') +
+  facet_wrap(~Province_State) +
+  labs(title = "Food Stamps and Covid Depths Per Capita, by County") + 
+  scale_y_continuous(limits = c(0, 0.10)) +
+  ylab("Food Stamps Per Capita") +
+  xlab("Covid Deaths Per Capita (total deaths through 10/25/21)")
+
 
 ```
